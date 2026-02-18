@@ -1,0 +1,95 @@
+# dolmetsch-lutebook-mei-score-viewer
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Score Viewer</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: sans-serif;
+      background: white;
+    }
+    #controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    button {
+      padding: 6px 14px;
+      cursor: pointer;
+    }
+    #mei-output svg {
+      width: 100%;
+      height: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="controls">
+    <button onclick="changePage(-1)">◀ Prev</button>
+    <span id="page-info">Loading...</span>
+    <button onclick="changePage(1)">Next ▶</button>
+  </div>
+
+  <div id="mei-output"></div>
+
+  <script src="https://www.verovio.org/javascript/latest/verovio-toolkit-wasm.js"></script>
+  <script>
+    let vrvToolkit;
+    let currentPage = 1;
+    let totalPages = 1;
+
+    // Replace this with your actual MEI filename
+    const meiFileName = "(Saltarello) 157r.mxl";
+
+    function renderPage(page) {
+      document.getElementById("mei-output").innerHTML =
+        vrvToolkit.renderToSVG(page);
+      document.getElementById("page-info").textContent =
+        "Page " + page + " of " + totalPages;
+    }
+
+    function changePage(direction) {
+      const newPage = currentPage + direction;
+      if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderPage(currentPage);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      fetch(meiFileName)
+        .then(r => r.text())
+        .then(meiData => {
+          const checkVerovio = setInterval(() => {
+            if (typeof verovio !== "undefined") {
+              clearInterval(checkVerovio);
+              vrvToolkit = new verovio.toolkit();
+              vrvToolkit.setOptions({
+                scale: 40,
+                pageWidth: 2100,
+                adjustPageHeight: true,
+                breaks: "auto"
+              });
+              vrvToolkit.loadData(meiData);
+              totalPages = vrvToolkit.getPageCount();
+              currentPage = 1;
+              renderPage(currentPage);
+            }
+          }, 100);
+        })
+        .catch(err => {
+          document.getElementById("mei-output").innerHTML =
+            "<p style='color:red;'>Failed to load score: " + err.message + "</p>";
+          document.getElementById("page-info").textContent = "Error";
+        });
+    });
+  </script>
+
+</body>
+</html>
